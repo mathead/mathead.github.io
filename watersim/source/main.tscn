@@ -1,0 +1,103 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://main.gd" type="Script" id=2]
+[ext_resource path="res://icon.png" type="Texture" id=3]
+
+[sub_resource type="PhysicsMaterial" id=1]
+
+[sub_resource type="RectangleShape2D" id=5]
+extents = Vector2( 586.966, 185.626 )
+
+[sub_resource type="Shader" id=2]
+code = "shader_type canvas_item;
+
+void fragment(){
+	vec2 speed = vec2(0.0, 0.0);
+	float total_dst = 0.0;
+	for (float i = 0.0; i < 800.0; i++) {
+		vec4 pos4 = texture(TEXTURE, vec2(i/1024.0, 0.0));
+		vec2 pos = vec2(pos4.x*1024.0, pos4.y*600.0);
+		float dst = distance(vec2(UV.x*1024.0, UV.y*600.0), pos);
+		vec4 spd4 = texture(TEXTURE, vec2(i/1024.0, 2.0/600.0));
+		speed += vec2(spd4.x, spd4.y) / sqrt(dst);
+		total_dst += 1.0/sqrt(dst);
+    }
+	speed /= total_dst;
+	float sum = 0.0;
+	float disturbance = 0.0;
+	for (float i = 0.0; i < 800.0; i++) {
+		vec4 pos4 = texture(TEXTURE, vec2(i/1024.0, 0.0));
+		vec2 pos = vec2(pos4.x*1024.0, pos4.y*600.0);
+		float dst = distance(vec2(UV.x*1024.0, UV.y*600.0), pos);
+		sum += clamp(1.0/(dst*dst*dst), 0.0, 0.0002);
+		//sum += clamp(1.0/dst, 0.0, 0.2)
+		vec4 spd4 = texture(TEXTURE, vec2(i/1024.0, 2.0/600.0));
+		disturbance += min(distance(vec2(spd4.x, spd4.y), speed) / dst, 0.05);
+    }
+	if (sum > 0.0007)
+		COLOR = mix(
+			vec4(0.2
+				+disturbance/5.0/(sum*500.0)
+				+pow(length(speed),2)/5.0
+				, 0.2
+				+disturbance/2.0/(sum*500.0)
+				+pow(length(speed),2)/5.0
+				, 1, 1), 
+			textureLod(
+				SCREEN_TEXTURE, 
+				SCREEN_UV+
+				vec2((sum*20.0)-0.06, (sum*20.0)-0.06)+
+				sin(vec2(TIME*2.0, TIME)+SCREEN_UV*50.0)/1000.0, 0.0),
+			0.2);
+	else
+    	COLOR = textureLod(SCREEN_TEXTURE, SCREEN_UV, 0.0);
+}"
+
+[sub_resource type="ShaderMaterial" id=3]
+shader = SubResource( 2 )
+
+[sub_resource type="ImageTexture" id=4]
+flags = 0
+lossy_quality = 1.0
+flags = 0
+size = Vector2( 1024, 600 )
+
+[sub_resource type="CircleShape2D" id=6]
+radius = 43.1305
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource( 2 )
+
+[node name="Sprite" type="Sprite" parent="."]
+position = Vector2( 510.764, 302.059 )
+scale = Vector2( 16.0323, 9.39877 )
+texture = ExtResource( 3 )
+
+[node name="CollisionPolygon2D3" type="Polygon2D" parent="."]
+color = Color( 0.145098, 0.0313726, 0.0313726, 1 )
+polygon = PoolVector2Array( 10.0487, 14.4568, 210.501, 497.324, 465.298, 568.596, 625.66, 450.997, 846.603, 515.142, 754.84, 235.4, 1023, 0.202408, 1183.36, 694.213, -154.768, 671.94, 2.92154, -3.36119 )
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+physics_material_override = SubResource( 1 )
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D"]
+polygon = PoolVector2Array( 10.0487, 14.4568, 210.501, 497.324, 465.298, 568.596, 625.66, 450.997, 846.603, 515.142, 754.84, 235.4, 1023, 0.202408, 1183.36, 694.213, -154.768, 671.94, 2.92154, -3.36119 )
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2( 532.581, -179.303 )
+shape = SubResource( 5 )
+
+[node name="Shader" type="Sprite" parent="."]
+material = SubResource( 3 )
+position = Vector2( 512, 300 )
+texture = SubResource( 4 )
+
+[node name="CollisionPolygon2D2" type="Polygon2D" parent="."]
+color = Color( 0.145098, 0.0313726, 0.0313726, 1 )
+polygon = PoolVector2Array( 10.0487, 14.4568, 210.501, 497.324, 465.298, 568.596, 625.66, 450.997, 846.603, 515.142, 754.84, 235.4, 1023, 0.202408, 1183.36, 694.213, -154.768, 671.94, 2.92154, -3.36119 )
+
+[node name="mouse" type="KinematicBody2D" parent="."]
+motion/sync_to_physics = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="mouse"]
+shape = SubResource( 6 )
